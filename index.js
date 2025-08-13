@@ -1,68 +1,117 @@
-var backlink = "E_LSiKJXFZs"
-var total = 0
-var tablee = document.getElementById("tablee")
+// Local storage key for custom URLs
+const CUSTOM_URLS_KEY = "backlink_custom_urls";
 
-async function UrlExists(url, name) {
-    // console.log(name)
-    // res = await fetch("https://thingproxy.freeboard.io/fetch/"+url);
-    // var stat = (res.status>199 && res.status<300)
-    var stat = true
-    tableDIV = document.getElementById("tableDIV")
-    if(stat) {
-        total += 1
-        tablee = document.getElementById("tablee")
-        var row = tablee.insertRow(1)
-        var cellname = row.insertCell(0)
-        var cellurl = row.insertCell(0)
-        cellname.innerHTML = name
-        cellurl.innerHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
-    }
+// Default custom URLs
+const DEFAULT_CUSTOM_URLS = [
+	{ name: "Cryptx.co", url: "https://cryptx.co/$URL" },
+	{ name: "Cryptichunt", url: "https://cryptichunt.paradigmclub.co/$URL" },
+];
+
+// Load custom URLs from local storage
+function loadCustomUrls() {
+	const stored = localStorage.getItem(CUSTOM_URLS_KEY);
+	if (!stored) {
+		// First time - save defaults
+		saveCustomUrls(DEFAULT_CUSTOM_URLS);
+		return DEFAULT_CUSTOM_URLS;
+	}
+	return JSON.parse(stored);
 }
 
-async function codimg() {
-    res = await fetch("links.json");
-    arr = []
-    jsonData = await res.json();
-    jsonData.forEach(element => {
-        regex = new RegExp(element["regex"])
-        if (regex.test(backlink)) {
-            arr.push({"url":element["url"].replace("$URL", backlink),"name":element["type"]})
-           }
-        }
-    );
-    if(arr.length==0) {
-        document.getElementById("tableDIV").innerHTML = `<h3 id="MATCHES">0 Matches Found</h3>`+tableDIV.innerHTML
-    }
-    return(arr)
+// Save custom URLs to local storage
+function saveCustomUrls(urls) {
+	localStorage.setItem(CUSTOM_URLS_KEY, JSON.stringify(urls));
 }
 
-async function start() {
-    total = 0;
-    document.getElementById("tableDIV").innerHTML = `
-    <table id="tablee">
-                <thead>
+// Enhanced search function
+async function searchBacklinks() {
+	const input = document.getElementById("txt").value.trim();
+	if (!input) return;
+
+	// Load JSON patterns
+	const response = await fetch("links.json");
+	const patterns = await response.json();
+
+	// Load custom URLs
+	const customUrls = loadCustomUrls();
+
+	const matches = [];
+
+	// Check against JSON patterns
+	// biome-ignore lint/complexity/noForEach: <explanation>
+	patterns.forEach((pattern) => {
+		const regex = new RegExp(pattern.regex);
+		if (regex.test(input)) {
+			matches.push({
+				name: pattern.name,
+				url: pattern.url.replace("$URL", input),
+				type: pattern.type,
+			});
+		}
+	});
+
+	// Check against custom URLs (assume they match any alphanumeric string)
+	const customRegex = /^[a-zA-Z0-9_-]+$/;
+	if (customRegex.test(input)) {
+		// biome-ignore lint/complexity/noForEach: <explanation>
+		customUrls.forEach((custom) => {
+			matches.push({
+				name: custom.name,
+				url: custom.url.replace("$URL", input),
+				type: "Custom URL",
+			});
+		});
+	}
+
+	displayResults(matches);
+}
+
+// Display search results
+function displayResults(matches) {
+	const tableDiv = document.getElementById("tableDIV");
+
+	if (matches.length === 0) {
+		tableDiv.innerHTML = "<h3>No matches found</h3>";
+		return;
+	}
+
+	const tableHTML = `
+        <h3>${matches.length} matches found</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Domain</th>
+                    <th>URL</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${matches
+									.map(
+										(match) => `
                     <tr>
-                        <th>Domain</th>
-                        <th>url</th>
+                        <td>${match.name}</td>
+                        <td><a href="${match.url}" target="_blank" rel="noopener noreferrer">${match.url}</a></td>
+                        <td>${match.type}</td>
                     </tr>
-                </thead>
-            </table>
-            `
-    console.log("STARTED")
-    codimg().then((arr) => {
-        arr.forEach(async (element) => {
-            await UrlExists(element["url"],element["name"])
-            if(!!document.getElementById("MATCHES")) {
-                document.getElementById("MATCHES").innerHTML = `${total} Matches Found`
-            }else {
-                document.getElementById("tableDIV").innerHTML = `<h3 id="MATCHES">1 Match Found</h3>`+tableDIV.innerHTML
-            }
-        })
-        console.log("YEAH")
-    })
+                `,
+									)
+									.join("")}
+            </tbody>
+        </table>
+    `;
+
+	tableDiv.innerHTML = tableHTML;
 }
 
-document.getElementById("mybtn").onclick=async ()=>{
-    backlink = document.getElementById("txt").value
-    await start();
-};
+// Initialize on page load
+document.addEventListener("DOMContentLoaded", () => {
+	// Add event listeners
+	document.getElementById("mybtn").addEventListener("click", searchBacklinks);
+	document.getElementById("txt").addEventListener("keypress", (e) => {
+		if (e.key === "Enter") {
+			searchBacklinks();
+		}
+	});
+});
+displayResults(matches);

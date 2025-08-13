@@ -13,7 +13,7 @@
 	},
 	{
 		"name": "ctxt.io link",
-		"regex": "^(2\/)[a-zA-Z0-9_-]{10}$",
+		"regex": "^(2/)[a-zA-Z0-9_-]{10}$",
 		"type": "ctxt.io link",
 		"url": "https://ctxt.io/$URL"
 	},
@@ -157,7 +157,7 @@
 	},
 	{
 		"name": "TinyURL",
-		"regex": "^[a-z0-9]{7}$",
+		"regex": "^[a-zA-Z0-9]{4,10}$",
 		"type": "Shortened Link",
 		"url": "https://tinyurl.com/$URL"
 	},
@@ -169,7 +169,7 @@
 	},
 	{
 		"name": "Bitly",
-		"regex": "^[a-zA-Z0-9]{7}$",
+		"regex": "^[a-zA-Z0-9]{4,10}$",
 		"type": "Shortened Link",
 		"url": "https://bit.ly/$URL"
 	},
